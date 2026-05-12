@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compound Interest Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 0.95rem; }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      max-width: 1100px;
+      width: 100%;
+      justify-content: center;
+    }
+    .panel {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid #334155;
+    }
+    .inputs-panel { flex: 0 0 320px; }
+    .chart-panel { flex: 1 1 600px; min-width: 300px; }
+    .panel h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1.25rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: #818cf8;
+    }
+    .field input::placeholder { color: #64748b; }
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .results {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #334155;
+      display: none;
+    }
+    .results.show { display: block; }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      font-size: 0.95rem;
+    }
+    .result-row .label { color: #94a3b8; }
+    .result-row .value { font-weight: 600; color: #38bdf8; }
+    .result-row.total .value { color: #34d399; font-size: 1.15rem; }
+    canvas { max-height: 420px; }
+    @media (max-width: 700px) {
+      .inputs-panel { flex: 1 1 100%; }
+      .chart-panel { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Compound Interest Calculator</h1>
+  <p class="subtitle">Enter your parameters and watch your money grow</p>
+
+  <div class="container">
+    <div class="panel inputs-panel">
+      <h2>Parameters</h2>
+
+      <div class="field">
+        <label for="principal">Initial Investment ($)</label>
+        <input type="number" id="principal" placeholder="e.g. 10000" value="10000" min="0" step="any">
+      </div>
+
+      <div class="field">
+        <label for="rate">Annual Interest Rate (%)</label>
+        <input type="number" id="rate" placeholder="e.g. 7" value="7" min="0" step="any">
+      </div>
+
+      <div class="field">
+        <label for="years">Time Period (Years)</label>
+        <input type="number" id="years" placeholder="e.g. 10" value="10" min="1" step="1">
+      </div>
+
+      <div class="field">
+        <label for="compound">Compounding Frequency</label>
+        <select id="compound">
+          <option value="1">Annually</option>
+          <option value="2">Semi-Annually</option>
+          <option value="4">Quarterly</option>
+          <option value="12" selected>Monthly</option>
+          <option value="365">Daily</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="monthly">Monthly Contribution ($)</label>
+        <input type="number" id="monthly" placeholder="e.g. 200" value="0" min="0" step="any">
+      </div>
+
+      <button class="btn" onclick="calculate()">Calculate</button>
+
+      <div class="results" id="results">
+        <div class="result-row">
+          <span class="label">Initial Investment</span>
+          <span class="value" id="r-principal"></span>
+        </div>
+        <div class="result-row">
+          <span class="label">Total Contributions</span>
+          <span class="value" id="r-contributions"></span>
+        </div>
+        <div class="result-row">
+          <span class="label">Total Interest Earned</span>
+          <span class="value" id="r-interest"></span>
+        </div>
+        <div class="result-row total">
+          <span class="label">Final Value</span>
+          <span class="value" id="r-total"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel chart-panel">
+      <h2>Growth Over Time</h2>
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    let chart = null;
+
+    function formatMoney(n) {
+      return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calculate() {
+      const P = parseFloat(document.getElementById('principal').value) || 0;
+      const r = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+      const t = parseInt(document.getElementById('years').value) || 1;
+      const n = parseInt(document.getElementById('compound').value);
+      const monthly = parseFloat(document.getElementById('monthly').value) || 0;
+
+      const labels = [];
+      const dataTotal = [];
+      const dataPrincipal = [];
+      const dataInterest = [];
+
+      let balance = P;
+      let totalContributed = P;
+
+      for (let year = 0; year <= t; year++) {
+        labels.push('Year ' + year);
+        dataTotal.push(balance);
+        dataPrincipal.push(totalContributed);
+        dataInterest.push(balance - totalContributed);
+
+        if (year < t) {
+          // Apply compound interest for each compounding period
+          for (let period = 0; period < n; period++) {
+            balance *= (1 + r / n);
+          }
+          // Add monthly contributions
+          totalContributed += monthly * 12;
+        }
+      }
+
+      // Show results
+      const totalInterest = dataTotal[dataTotal.length - 1] - dataPrincipal[dataPrincipal.length - 1];
+      document.getElementById('r-principal').textContent = formatMoney(P);
+      document.getElementById('r-contributions').textContent = formatMoney(totalContributed - P);
+      document.getElementById('r-interest').textContent = formatMoney(totalInterest);
+      document.getElementById('r-total').textContent = formatMoney(dataTotal[dataTotal.length - 1]);
+      document.getElementById('results').classList.add('show');
+
+      // Draw chart
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Total Value',
+              data: dataTotal,
+              borderColor: '#34d399',
+              backgroundColor: 'rgba(52, 211, 153, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+            },
+            {
+              label: 'Your Contributions',
+              data: dataPrincipal,
+              borderColor: '#818cf8',
+              backgroundColor: 'rgba(129, 140, 248, 0.05)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2,
+              borderDash: [5, 5],
+            },
+            {
+              label: 'Interest Earned',
+              data: dataInterest,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: {
+              labels: { color: '#94a3b8', usePointStyle: true, padding: 20 }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + formatMoney(ctx.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#64748b' },
+              grid: { color: 'rgba(51,65,85,0.5)' }
+            },
+            y: {
+              ticks: {
+                color: '#64748b',
+                callback: function(v) { return '$' + (v / 1000).toFixed(0) + 'k'; }
+              },
+              grid: { color: 'rgba(51,65,85,0.5)' }
+            }
+          }
+        }
+      });
+    }
+
+    // Auto-calculate on load
+    calculate();
+  </script>
+</body>
+</html>
