@@ -1,21 +1,21 @@
 import React from 'react'
 
 export default function Stats({ stats }) {
+  const currentStepStats = stats || { comparisons: 0, swaps: 0 }
+
   return (
-    <div className="flex items-center gap-4 text-xs">
-      <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-yellow-400" />
-        <span className="text-dark-400">Comparisons:</span>
-        <span className="text-dark-100 font-mono font-semibold">{stats.comparisons.toLocaleString()}</span>
+    <div className="grid grid-cols-3 gap-3">
+      <div className="text-center">
+        <div className="text-lg font-bold text-violet-400">{currentStepStats.comparisons}</div>
+        <div className="text-xs text-dark-500">Comparisons</div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-2 h-2 rounded-full bg-red-400" />
-        <span className="text-dark-400">Swaps:</span>
-        <span className="text-dark-100 font-mono font-semibold">{stats.swaps.toLocaleString()}</span>
+      <div className="text-center">
+        <div className="text-lg font-bold text-red-400">{currentStepStats.swaps}</div>
+        <div className="text-xs text-dark-500">Swaps</div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-dark-400">⏱</span>
-        <span className="text-dark-100 font-mono font-semibold">{(stats.elapsed / 1000).toFixed(2)}s</span>
+      <div className="text-center">
+        <div className="text-lg font-bold text-cyan-400">{currentStepStats.elapsed || 0}</div>
+        <div className="text-xs text-dark-500">Time (ms)</div>
       </div>
     </div>
   )

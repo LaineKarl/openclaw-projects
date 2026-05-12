@@ -5,7 +5,7 @@ export function useAlgorithm(algo) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(50)
-  const [stats, setStats] = useState({ comparisons: 0, swaps: 0 })
+  const [stats, setStats] = useState({ comparisons: 0, swaps: 0, elapsed: 0 })
   const intervalRef = useRef(null)
 
   const generateSteps = useCallback(() => {
