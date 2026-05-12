@@ -4,13 +4,13 @@ import GridCell from './GridCell'
 
 export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsPlaying, speed, gridConfig, onGridUpdate, onCellClick }) {
   const [arraySize, setArraySize] = useState(30)
+  const [grid, setGrid] = useState([])
   const dragRef = useRef({ isDragging: false })
   const intervalRef = useRef(null)
 
-  // Get current step data
   const stepData = steps[currentStep] || null
 
-  // Initialize grid for pathfinding algorithms
+  // Initialize grid for pathfinding
   useEffect(() => {
     if (algo.category === 'pathfinding') {
       const rows = gridConfig.rows
@@ -26,21 +26,11 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
     }
   }, [algo, gridConfig])
 
-  // Animation loop for pathfinding
-  useEffect(() => {
-    if (isPlaying && algo.category === 'pathfinding') {
-      intervalRef.current = setInterval(() => {
-        if (currentStep < steps.length - 1) {
-          // This would be handled by the parent
-        }
-      }, 1000 / (speed / 5))
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isPlaying, algo, speed, currentStep, steps.length])
+  const handleCellClick = useCallback((row, col) => {
+    onCellClick(row, col)
+  }, [onCellClick])
 
-  // Render sorting visualization
+  // Sorting visualization
   if (algo.category === 'sorting') {
     const arr = stepData?.array || Array.from({ length: arraySize }, (_, i) => i + 1)
     const maxVal = Math.max(...arr, 1)
@@ -48,7 +38,6 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
 
     return (
       <div className="flex-1 flex flex-col">
-        {/* Algorithm description */}
         <div className="mb-4 p-3 card">
           <h3 className="text-sm font-semibold text-dark-200 mb-1">{algo.name}</h3>
           <p className="text-xs text-dark-400 leading-relaxed">{algo.description}</p>
@@ -61,7 +50,6 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
           </div>
         </div>
 
-        {/* Array size control */}
         <div className="flex items-center gap-3 mb-3">
           <span className="text-xs text-dark-500">Array size:</span>
           <input
@@ -75,7 +63,6 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
           <span className="text-xs text-dark-400 font-mono">{arraySize}</span>
         </div>
 
-        {/* Bar chart visualization */}
         <div className="flex-1 flex items-end justify-center gap-[1px] px-4 pb-4 min-h-[300px]">
           {arr.map((val, i) => {
             const height = (val / maxVal) * 100
@@ -91,13 +78,11 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
                 }}
                 transition={{ duration: 0.1 }}
                 className="flex-1 rounded-t-sm min-w-[2px]"
-                style={{ height: `${height}%` }}
               />
             )
           })}
         </div>
 
-        {/* Legend */}
         <div className="flex items-center justify-center gap-4 pb-2">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-violet-500" />
@@ -107,9 +92,12 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
             <div className="w-3 h-3 rounded bg-yellow-400" />
             <span className="text-xs text-dark-400">Comparing</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-400" />
+            <span className="text-xs text-dark-400">Swapping</span>
+          </div>
         </div>
 
-        {/* Step indicator */}
         <div className="text-center text-xs text-dark-500 pb-2">
           Step {currentStep + 1} / {steps.length}
         </div>
@@ -117,13 +105,12 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
     )
   }
 
-  // Render pathfinding visualization
+  // Pathfinding visualization
   if (algo.category === 'pathfinding') {
     const cellSize = Math.min(28, Math.floor(500 / gridConfig.cols))
     
     return (
       <div className="flex-1 flex flex-col">
-        {/* Algorithm description */}
         <div className="mb-4 p-3 card">
           <h3 className="text-sm font-semibold text-dark-200 mb-1">{algo.name}</h3>
           <p className="text-xs text-dark-400 leading-relaxed">{algo.description}</p>
@@ -136,7 +123,6 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
           </div>
         </div>
 
-        {/* Grid */}
         <div className="flex-1 flex items-center justify-center p-4">
           <div
             className="grid gap-px bg-dark-700 p-2 rounded-lg border border-dark-600"
@@ -152,7 +138,15 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
                 if (cell === 1) state = 'wall'
                 else if (cell === 2) state = 'start'
                 else if (cell === 3) state = 'end'
-                else if (stepData?.highlightedCells?.[`${r},${c}`]) state = stepData.highlightedCells[`${r},${c}`]
+                else if (stepData?.highlight?.r === r && stepData?.highlight?.c === c) {
+                  state = stepData.type === 'visiting' ? 'visiting' : 'path'
+                }
+                else if (stepData?.visited?.[r]?.[c]) {
+                  state = 'visited'
+                }
+                else if (stepData?.path && stepData.path.some(p => p[0] === r && p[1] === c)) {
+                  state = 'path'
+                }
                 
                 return (
                   <GridCell
@@ -163,13 +157,7 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
                     isStart={cell === 2}
                     isEnd={cell === 3}
                     state={state}
-                    onClick={onCellClick}
-                    onDrag={(row, col, isDown) => {
-                      if (isDown) {
-                        dragRef.current.isDragging = true
-                        onCellClick(row, col)
-                      }
-                    }}
+                    onClick={handleCellClick}
                     isDragging={dragRef.current.isDragging}
                   />
                 )
@@ -178,7 +166,6 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
           </div>
         </div>
 
-        {/* Legend */}
         <div className="flex items-center justify-center gap-4 pb-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-emerald-500" />
@@ -198,11 +185,14 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-emerald-400" />
+            <span className="text-xs text-dark-400">Visited</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-yellow-400" />
             <span className="text-xs text-dark-400">Path</span>
           </div>
         </div>
 
-        {/* Step indicator */}
         <div className="text-center text-xs text-dark-500 pb-2">
           Step {currentStep + 1} / {steps.length}
         </div>
