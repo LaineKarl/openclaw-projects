@@ -123,7 +123,12 @@
 
       <div class="field">
         <label for="rate">Annual Interest Rate (%)</label>
-        <input type="number" id="rate" placeholder="e.g. 7" value="7" min="0" step="any">
+        <input type="number" id="rate" placeholder="e.g. 7 (use negative for fees/losses)" value="7" step="any">
+      </div>
+
+      <div class="field">
+        <label for="lossRate">Annual Loss Rate / Fees (%)</label>
+        <input type="number" id="lossRate" placeholder="e.g. 2 (applied to balance each year)" value="0" min="0" step="any">
       </div>
 
       <div class="field">
@@ -185,6 +190,7 @@
     function calculate() {
       const P = parseFloat(document.getElementById('principal').value) || 0;
       const r = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+      const loss = (parseFloat(document.getElementById('lossRate').value) || 0) / 100;
       const t = parseInt(document.getElementById('years').value) || 1;
       const n = parseInt(document.getElementById('compound').value);
       const monthly = parseFloat(document.getElementById('monthly').value) || 0;
@@ -208,6 +214,8 @@
           for (let period = 0; period < n; period++) {
             balance *= (1 + r / n);
           }
+          // Apply annual loss/fees
+          balance *= (1 - loss);
           // Add monthly contributions
           totalContributed += monthly * 12;
         }
@@ -215,9 +223,11 @@
 
       // Show results
       const totalInterest = dataTotal[dataTotal.length - 1] - dataPrincipal[dataPrincipal.length - 1];
+      const interestEl = document.getElementById('r-interest');
       document.getElementById('r-principal').textContent = formatMoney(P);
       document.getElementById('r-contributions').textContent = formatMoney(totalContributed - P);
-      document.getElementById('r-interest').textContent = formatMoney(totalInterest);
+      interestEl.textContent = formatMoney(totalInterest);
+      interestEl.style.color = totalInterest < 0 ? '#ef4444' : '#38bdf8';
       document.getElementById('r-total').textContent = formatMoney(dataTotal[dataTotal.length - 1]);
       document.getElementById('results').classList.add('show');
 
@@ -253,8 +263,24 @@
             {
               label: 'Interest Earned',
               data: dataInterest,
-              borderColor: '#f59e0b',
-              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              borderColor: function(context) {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return '#f59e0b';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
+                gradient.addColorStop(1, 'rgba(245, 158, 11, 0.8)');
+                return gradient;
+              }(),
+              backgroundColor: function(context) {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return 'rgba(245, 158, 11, 0.08)';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, 'rgba(239, 68, 68, 0.15)');
+                gradient.addColorStop(1, 'rgba(245, 158, 11, 0.08)');
+                return gradient;
+              }(),
               fill: true,
               tension: 0.3,
               pointRadius: 2,
