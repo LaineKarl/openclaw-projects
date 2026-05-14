@@ -205,29 +205,74 @@ export function useAlgorithm(algo, arraySize) {
 
       if (algo.id === 'a-star') {
         const heuristic = (r, c) => Math.abs(r - 7) + Math.abs(c - 16)
-        const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
+        const gScore = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
+        const fScore = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
         const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
+        const inOpen = Array.from({ length: rows }, () => Array(cols).fill(false))
         const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
-        dist[7][3] = 0
-        const getMin = () => { let minF = Infinity, mr = -1, mc = -1; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!visited[r][c] && dist[r][c] + heuristic(r, c) < minF) { minF = dist[r][c] + heuristic(r, c); mr = r; mc = c } return mr === -1 ? null : [mr, mc] }
-        while (true) {
-          const curr = getMin()
-          if (!curr || (curr[0] === 7 && curr[1] === 16)) break
-          const [r, c] = curr; visited[r][c] = true
-          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+
+        gScore[7][3] = 0
+        fScore[7][3] = heuristic(7, 3)
+
+        const openSet = [[7, 3]]
+        inOpen[7][3] = true
+
+        const getBestOpen = () => {
+          let bestIdx = -1
+          let bestF = Infinity
+          for (let i = 0; i < openSet.length; i++) {
+            const [r, c] = openSet[i]
+            if (fScore[r][c] < bestF) {
+              bestF = fScore[r][c]
+              bestIdx = i
+            }
+          }
+          if (bestIdx === -1) return null
+          const node = openSet[bestIdx]
+          openSet.splice(bestIdx, 1)
+          inOpen[node[0]][node[1]] = false
+          return node
+        }
+
+        let found = false
+        while (openSet.length > 0) {
+          const curr = getBestOpen()
+          if (!curr) break
+          const [r, c] = curr
+          if (r === 7 && c === 16) { found = true; break }
+          visited[r][c] = true
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist: gScore.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+
           for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nr = r + dr, nc = c + dc
-            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && grid[nr][nc] !== 1) {
-              const nd = dist[r][c] + 1
-              if (nd < dist[nr][nc]) { dist[nr][nc] = nd; parent[nr][nc] = [r, c] }
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
+            if (grid[nr][nc] === 1 || visited[nr][nc]) continue
+
+            const tentative = gScore[r][c] + 1
+            if (tentative < gScore[nr][nc]) {
+              parent[nr][nc] = [r, c]
+              gScore[nr][nc] = tentative
+              fScore[nr][nc] = tentative + heuristic(nr, nc)
+              if (!inOpen[nr][nc]) {
+                openSet.push([nr, nc])
+                inOpen[nr][nc] = true
+              }
             }
           }
         }
-        if (dist[7][16] < Infinity) {
-          const path = []; let cur = [7, 16]
-          while (cur) { path.push(cur); const p = parent[cur[0]]?.[cur[1]]; cur = p ? p : null }
+
+        if (found) {
+          const path = []
+          let cur = [7, 16]
+          while (cur) {
+            path.push(cur)
+            const p = parent[cur[0]]?.[cur[1]]
+            cur = p ? p : null
+          }
           path.reverse()
-          for (let i = 1; i < path.length; i++) newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          for (let i = 1; i < path.length; i++) {
+            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist: gScore.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          }
         }
       }
 
