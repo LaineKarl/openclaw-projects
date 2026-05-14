@@ -236,6 +236,11 @@ export function useAlgorithm(algo, arraySize) {
     }
   }, [algo, arraySize])
 
+  // Generate steps whenever the algorithm changes
+  useEffect(() => {
+    if (algo) generateSteps()
+  }, [algo, generateSteps])
+
   useEffect(() => {
     if (isPlaying && steps.length > 0 && currentStep < steps.length - 1) {
       intervalRef.current = setInterval(() => {
