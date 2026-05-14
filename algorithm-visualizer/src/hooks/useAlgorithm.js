@@ -13,14 +13,16 @@ export function useAlgorithm(algo, arraySize) {
     if (!algo) return
     startTimeRef.current = Date.now()
     setElapsed(0)
+    const newSteps = []
+    let comparisons = 0
+    let swaps = 0
 
     if (algo.category === 'sorting') {
       const size = Math.max(5, Number(arraySize) || 30)
       const arr = Array.from({ length: size }, () => Math.floor(Math.random() * 95) + 5)
       const arrCopy = [...arr]
-      const newSteps = []
-      let comparisons = 0
-      let swaps = 0
+      comparisons = 0
+      swaps = 0
 
       if (algo.id === 'bubble-sort') {
         const n = arrCopy.length
@@ -137,6 +139,7 @@ export function useAlgorithm(algo, arraySize) {
       if (algo.id === 'radix-sort') {
         const maxVal = Math.max(...arrCopy)
         let exp = 1
+        let pass = 0
         while (Math.floor(maxVal / exp) > 0) {
           const count = new Array(10).fill(0)
           const output = new Array(arrCopy.length)
@@ -151,7 +154,8 @@ export function useAlgorithm(algo, arraySize) {
             count[digit]--
           }
           for (let i = 0; i < arrCopy.length; i++) arrCopy[i] = output[i]
-          newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [], comparisons, swaps })
+          pass++
+          newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [], comparisons, swaps, radixPass: pass })
           exp *= 10
         }
         newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
@@ -282,6 +286,7 @@ export function useAlgorithm(algo, arraySize) {
           }
           return false
         }
+        parent[7][3] = null
         dfs(7, 3)
 
         if (found) {
@@ -503,7 +508,6 @@ export function useAlgorithm(algo, arraySize) {
       const size = Math.max(5, Number(arraySize) || 20)
       const arr = Array.from({ length: size }, (_, i) => i + 1).sort(() => Math.random() - 0.5)
       const target = arr[Math.floor(Math.random() * arr.length)]
-      const newSteps = []
       let found = false
 
       if (algo.id === 'linear-search') {
@@ -531,10 +535,10 @@ export function useAlgorithm(algo, arraySize) {
           newSteps.push({ type: 'not-found', array: sorted, index: -1, target, low: left, high: right })
         }
       }
-
-      setSteps(newSteps)
-      setCurrentStep(0)
     }
+
+    setSteps(newSteps)
+    setCurrentStep(0)
   }, [algo, arraySize])
 
   // Generate steps whenever the algorithm changes
