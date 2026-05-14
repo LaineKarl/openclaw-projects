@@ -69,14 +69,13 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
             const isHighlighted = highlight.includes(i)
             return (
               <motion.div
-                key={i}
-                layout
+                key={`${currentStep}-${i}`}
                 initial={false}
                 animate={{
                   height: `${height}%`,
                   backgroundColor: isHighlighted ? '#facc15' : '#818cf8',
                 }}
-                transition={{ duration: 0.1 }}
+                transition={{ duration: 0.15, ease: 'easeInOut' }}
                 className="flex-1 rounded-t-sm min-w-[2px]"
               />
             )
@@ -108,7 +107,10 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
   // Pathfinding visualization
   if (algo.category === 'pathfinding') {
     const cellSize = Math.min(28, Math.floor(500 / gridConfig.cols))
-    
+
+    // Derive grid from stepData for dynamic playback; fall back to initial grid state
+    const displayGrid = stepData?.grid || grid
+
     return (
       <div className="flex-1 flex flex-col">
         <div className="mb-4 p-3 card">
@@ -132,7 +134,7 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
             }}
             onMouseLeave={() => { dragRef.current.isDragging = false }}
           >
-            {grid.map((row, r) =>
+            {displayGrid.map((row, r) =>
               row.map((cell, c) => {
                 let state = null
                 if (cell === 1) state = 'wall'
@@ -147,7 +149,7 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
                 else if (stepData?.path && stepData.path.some(p => p[0] === r && p[1] === c)) {
                   state = 'path'
                 }
-                
+
                 return (
                   <GridCell
                     key={`${r}-${c}`}

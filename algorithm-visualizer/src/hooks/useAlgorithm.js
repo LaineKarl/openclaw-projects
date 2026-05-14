@@ -5,11 +5,14 @@ export function useAlgorithm(algo) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(50)
-  const [stats, setStats] = useState({ comparisons: 0, swaps: 0, elapsed: 0 })
+  const [elapsed, setElapsed] = useState(0)
   const intervalRef = useRef(null)
+  const startTimeRef = useRef(null)
 
   const generateSteps = useCallback(() => {
     if (!algo) return
+    startTimeRef.current = Date.now()
+    setElapsed(0)
 
     if (algo.category === 'sorting') {
       const arr = Array.from({ length: 30 }, () => Math.floor(Math.random() * 95) + 5)
@@ -24,23 +27,11 @@ export function useAlgorithm(algo) {
           let swapped = false
           for (let j = 0; j < n - i - 1; j++) {
             comparisons++
-            newSteps.push({
-              type: 'comparing',
-              array: [...arrCopy],
-              highlight: [j, j + 1],
-              comparisons,
-              swaps,
-            })
+            newSteps.push({ type: 'comparing', array: [...arrCopy], highlight: [j, j + 1], comparisons, swaps })
             if (arrCopy[j] > arrCopy[j + 1]) {
               [arrCopy[j], arrCopy[j + 1]] = [arrCopy[j + 1], arrCopy[j]]
               swaps++
-              newSteps.push({
-                type: 'swapping',
-                array: [...arrCopy],
-                highlight: [j, j + 1],
-                comparisons,
-                swaps,
-              })
+              newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [j, j + 1], comparisons, swaps })
             }
           }
           if (!swapped) {
@@ -79,9 +70,7 @@ export function useAlgorithm(algo) {
               swaps++
               newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [j - 1, j], comparisons, swaps })
               j--
-            } else {
-              break
-            }
+            } else break
           }
         }
         newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
@@ -110,7 +99,7 @@ export function useAlgorithm(algo) {
               newSteps.push({ type: 'swapping', array: [...arr], highlight: [i, j], comparisons, swaps })
             }
           }
-          [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]]
+          [arr[i + 1], arr[high]] = [arr[high], i + 1]
           swaps++
           newSteps.push({ type: 'swapping', array: [...arr], highlight: [i + 1, high], comparisons, swaps })
           return i + 1
@@ -133,27 +122,14 @@ export function useAlgorithm(algo) {
           while (i < leftArr.length && j < rightArr.length) {
             comparisons++
             newSteps.push({ type: 'comparing', array: [...arr], highlight: [left + i, mid + j], comparisons, swaps })
-            if (leftArr[i] <= rightArr[j]) {
-              arr[k] = leftArr[i]
-              i++
-            } else {
-              arr[k] = rightArr[j]
-              j++
-            }
+            if (leftArr[i] <= rightArr[j]) { arr[k] = leftArr[i]; i++ }
+            else { arr[k] = rightArr[j]; j++ }
             swaps++
             newSteps.push({ type: 'swapping', array: [...arr], highlight: [k], comparisons, swaps })
             k++
           }
-          while (i < leftArr.length) {
-            arr[k] = leftArr[i]
-            newSteps.push({ type: 'swapping', array: [...arr], highlight: [k], comparisons, swaps })
-            i++; k++
-          }
-          while (j < rightArr.length) {
-            arr[k] = rightArr[j]
-            newSteps.push({ type: 'swapping', array: [...arr], highlight: [k], comparisons, swaps })
-            j++; k++
-          }
+          while (i < leftArr.length) { arr[k] = leftArr[i]; newSteps.push({ type: 'swapping', array: [...arr], highlight: [k], comparisons, swaps }); i++; k++ }
+          while (j < rightArr.length) { arr[k] = rightArr[j]; newSteps.push({ type: 'swapping', array: [...arr], highlight: [k], comparisons, swaps }); j++; k++ }
         }
         mergeSort(arrCopy, 0, arrCopy.length)
         newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
@@ -164,59 +140,36 @@ export function useAlgorithm(algo) {
     }
 
     if (algo.category === 'pathfinding') {
-      const rows = 15
-      const cols = 20
+      const rows = 15, cols = 20
       const grid = Array.from({ length: rows }, () => Array(cols).fill(0))
-      const startRow = 7, startCol = 3
-      const endRow = 7, endCol = 16
-
-      grid[startRow][startCol] = 2
-      grid[endRow][endCol] = 3
-
+      grid[7][3] = 2; grid[7][16] = 3
       const wallSet = new Set(['4,5','4,6','4,7','4,8','4,9','8,5','8,6','8,7','8,8','8,9'])
-
-      wallSet.forEach(w => {
-        const [r, c] = w.split(',').map(Number)
-        grid[r][c] = 1
-      })
-
+      wallSet.forEach(w => { const [r, c] = w.split(',').map(Number); grid[r][c] = 1 })
       const newSteps = []
 
       if (algo.id === 'bfs') {
         const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
         const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
-        const queue = [[startRow, startCol]]
-        visited[startRow][startCol] = true
+        const queue = [[7, 3]]
+        visited[7][3] = true
         let found = false
-
         while (queue.length > 0) {
           const [r, c] = queue.shift()
-          if (r === endRow && c === endCol) { found = true; break }
-
-          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited, parent })
-
-          const dirs = [[-1,0],[1,0],[0,-1],[0,1]]
-          for (const [dr, dc] of dirs) {
+          if (r === 7 && c === 16) { found = true; break }
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nr = r + dr, nc = c + dc
             if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && grid[nr][nc] !== 1) {
-              visited[nr][nc] = true
-              parent[nr][nc] = [r, c]
-              queue.push([nr, nc])
+              visited[nr][nc] = true; parent[nr][nc] = [r, c]; queue.push([nr, nc])
             }
           }
         }
-
         if (found) {
-          const path = []
-          let cur = [endRow, endCol]
-          while (cur) {
-            path.push(cur)
-            cur = parent[cur[0]]?.[cur[1]] ? parent[cur[0]][cur[1]] : null
-          }
+          const path = []; let cur = [7, 16]
+          while (cur) { path.push(cur); cur = parent[cur[0]]?.[cur[1]] ? parent[cur[0]][cur[1]] : null }
           path.reverse()
           for (let i = 1; i < path.length; i++) {
-            const [pr, pc] = path[i]
-            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), visited, parent })
+            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
           }
         }
       }
@@ -225,102 +178,54 @@ export function useAlgorithm(algo) {
         const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
         const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
         const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
-        dist[startRow][startCol] = 0
-
-        const getMin = () => {
-          let minD = Infinity, mr = -1, mc = -1
-          for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-              if (!visited[r][c] && dist[r][c] < minD) { minD = dist[r][c]; mr = r; mc = c }
-            }
-          }
-          return mr === -1 ? null : [mr, mc]
-        }
-
+        dist[7][3] = 0
+        const getMin = () => { let minD = Infinity, mr = -1, mc = -1; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!visited[r][c] && dist[r][c] < minD) { minD = dist[r][c]; mr = r; mc = c } return mr === -1 ? null : [mr, mc] }
         while (true) {
           const curr = getMin()
-          if (!curr || (curr[0] === endRow && curr[1] === endCol)) break
-          const [r, c] = curr
-          visited[r][c] = true
-          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist, visited, parent })
-
-          const dirs = [[-1,0],[1,0],[0,-1],[0,1]]
-          for (const [dr, dc] of dirs) {
+          if (!curr || (curr[0] === 7 && curr[1] === 16)) break
+          const [r, c] = curr; visited[r][c] = true
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nr = r + dr, nc = c + dc
             if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && grid[nr][nc] !== 1) {
               const nd = dist[r][c] + 1
-              if (nd < dist[nr][nc]) {
-                dist[nr][nc] = nd
-                parent[nr][nc] = [r, c]
-              }
+              if (nd < dist[nr][nc]) { dist[nr][nc] = nd; parent[nr][nc] = [r, c] }
             }
           }
         }
-
-        if (dist[endRow][endCol] < Infinity) {
-          const path = []
-          let cur = [endRow, endCol]
-          while (cur) {
-            path.push(cur)
-            const p = parent[cur[0]]?.[cur[1]]
-            cur = p ? p : null
-          }
+        if (dist[7][16] < Infinity) {
+          const path = []; let cur = [7, 16]
+          while (cur) { path.push(cur); const p = parent[cur[0]]?.[cur[1]]; cur = p ? p : null }
           path.reverse()
-          for (let i = 1; i < path.length; i++) {
-            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist, visited, parent })
-          }
+          for (let i = 1; i < path.length; i++) newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
         }
       }
 
       if (algo.id === 'a-star') {
-        const heuristic = (r, c) => Math.abs(r - endRow) + Math.abs(c - endCol)
+        const heuristic = (r, c) => Math.abs(r - 7) + Math.abs(c - 16)
         const dist = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
         const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
         const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
-        dist[startRow][startCol] = 0
-
-        const getMin = () => {
-          let minF = Infinity, mr = -1, mc = -1
-          for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-              if (!visited[r][c] && dist[r][c] + heuristic(r, c) < minF) { minF = dist[r][c] + heuristic(r, c); mr = r; mc = c }
-            }
-          }
-          return mr === -1 ? null : [mr, mc]
-        }
-
+        dist[7][3] = 0
+        const getMin = () => { let minF = Infinity, mr = -1, mc = -1; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!visited[r][c] && dist[r][c] + heuristic(r, c) < minF) { minF = dist[r][c] + heuristic(r, c); mr = r; mc = c } return mr === -1 ? null : [mr, mc] }
         while (true) {
           const curr = getMin()
-          if (!curr || (curr[0] === endRow && curr[1] === endCol)) break
-          const [r, c] = curr
-          visited[r][c] = true
-          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist, visited, parent })
-
-          const dirs = [[-1,0],[1,0],[0,-1],[0,1]]
-          for (const [dr, dc] of dirs) {
+          if (!curr || (curr[0] === 7 && curr[1] === 16)) break
+          const [r, c] = curr; visited[r][c] = true
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nr = r + dr, nc = c + dc
             if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && grid[nr][nc] !== 1) {
               const nd = dist[r][c] + 1
-              if (nd < dist[nr][nc]) {
-                dist[nr][nc] = nd
-                parent[nr][nc] = [r, c]
-              }
+              if (nd < dist[nr][nc]) { dist[nr][nc] = nd; parent[nr][nc] = [r, c] }
             }
           }
         }
-
-        if (dist[endRow][endCol] < Infinity) {
-          const path = []
-          let cur = [endRow, endCol]
-          while (cur) {
-            path.push(cur)
-            const p = parent[cur[0]]?.[cur[1]]
-            cur = p ? p : null
-          }
+        if (dist[7][16] < Infinity) {
+          const path = []; let cur = [7, 16]
+          while (cur) { path.push(cur); const p = parent[cur[0]]?.[cur[1]]; cur = p ? p : null }
           path.reverse()
-          for (let i = 1; i < path.length; i++) {
-            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist, visited, parent })
-          }
+          for (let i = 1; i < path.length; i++) newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), dist: dist.map(row => [...row]), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
         }
       }
 
@@ -341,10 +246,19 @@ export function useAlgorithm(algo) {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [isPlaying, steps.length, currentStep, speed])
 
+  // Update elapsed time during playback
+  useEffect(() => {
+    if (isPlaying && startTimeRef.current) {
+      const timer = setInterval(() => setElapsed(Math.round((Date.now() - startTimeRef.current) / 10)), 50)
+      return () => clearInterval(timer)
+    }
+  }, [isPlaying])
+
   const stepForward = useCallback(() => { if (currentStep < steps.length - 1) setCurrentStep(prev => prev + 1) }, [currentStep, steps.length])
   const stepBackward = useCallback(() => { if (currentStep > 0) setCurrentStep(prev => prev - 1) }, [currentStep])
-
   const reset = useCallback(() => { setIsPlaying(false); setCurrentStep(0); generateSteps() }, [generateSteps])
 
-  return { steps, currentStep, isPlaying, setIsPlaying, speed, setSpeed, stats, stepForward, stepBackward, reset, generateSteps }
+  const stats = steps[currentStep] ? { comparisons: steps[currentStep].comparisons, swaps: steps[currentStep].swaps } : { comparisons: 0, swaps: 0 }
+
+  return { steps, currentStep, isPlaying, setIsPlaying, speed, setSpeed, elapsed, stepForward, stepBackward, reset, generateSteps, stats }
 }
