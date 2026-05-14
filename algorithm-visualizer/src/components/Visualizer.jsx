@@ -28,6 +28,105 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
     onCellClick(row, col)
   }, [onCellClick])
 
+  // Search visualization
+  if (algo.category === 'search') {
+    const stepData = steps[currentStep] || null
+    const arr = stepData?.array || []
+    const target = stepData?.target
+    const index = stepData?.index ?? -1
+    const isFound = stepData?.found
+    const isNotFound = stepData?.type === 'not-found'
+    const low = stepData?.low ?? 0
+    const high = stepData?.high ?? arr.length - 1
+
+    return (
+      <div className="flex-1 flex flex-col">
+        <div className="mb-4 p-3 card">
+          <h3 className="text-sm font-semibold text-dark-200 mb-1">{algo.name}</h3>
+          <p className="text-xs text-dark-400 leading-relaxed">{algo.description}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {algo.tags.map(tag => (
+              <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-dark-700 text-dark-400">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-violet-500" />
+            <span className="text-xs text-dark-400">Unsearched</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-yellow-400" />
+            <span className="text-xs text-dark-400">Checking</span>
+          </div>
+          {algo.id === 'binary-search' && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-emerald-400" />
+                <span className="text-xs text-dark-400">Low</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-red-400" />
+                <span className="text-xs text-dark-400">High</span>
+              </div>
+            </>
+          )}
+          <div className="flex items-center gap-1.5">
+            <div className={`w-3 h-3 rounded ${isFound ? 'bg-green-500' : isNotFound ? 'bg-gray-500' : 'bg-violet-500'}`} />
+            <span className="text-xs text-dark-400">{isFound ? 'Found' : isNotFound ? 'Not found' : 'Result'}</span>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-end justify-center gap-[2px] px-4 pb-4 min-h-[300px]">
+          {arr.map((val, i) => {
+            let color = '#818cf8'
+            let border = 'none'
+            if (algo.id === 'binary-search') {
+              if (i >= low && i <= high) {
+                color = '#818cf8'
+              } else {
+                color = '#374151'
+              }
+              if (i === low && i !== index) color = '#34d399'
+              if (i === high && i !== index) color = '#f87171'
+              if (i === index) color = '#facc15'
+            } else {
+              if (i === index) color = '#facc15'
+              if (i > index) color = '#374151'
+            }
+            if (isFound && i === index) color = '#22c55e'
+            if (isNotFound) color = '#6b7280'
+
+            const height = (val / Math.max(...arr, 1)) * 100
+            return (
+              <div
+                key={i}
+                style={{
+                  height: `${height}%`,
+                  backgroundColor: color,
+                  borderColor: i === index ? '#facc15' : 'transparent',
+                  borderWidth: i === index ? '2px' : '0px',
+                }}
+                className="flex-1 rounded-t-sm min-w-[2px] transition-colors duration-150"
+              />
+            )
+          })}
+        </div>
+
+        <div className="text-center text-xs text-dark-500 pb-2">
+          Step {currentStep + 1} / {steps.length}
+          {target !== undefined && <span className="ml-2">Target: <strong className="text-violet-400">{target}</strong></span>}
+          {algo.id === 'binary-search' && stepData?.left !== undefined && (
+            <span className="ml-2">L:{low} R:{high}</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // Sorting visualization
   if (algo.category === 'sorting') {
     const arr = stepData?.array || Array.from({ length: arraySize }, (_, i) => i + 1)

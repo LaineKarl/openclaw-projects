@@ -109,6 +109,69 @@ export function useAlgorithm(algo, arraySize) {
         quickSort(arrCopy, 0, arrCopy.length - 1)
       }
 
+      if (algo.id === 'heap-sort') {
+        const n = arrCopy.length
+        const heapify = (size, i) => {
+          let largest = i
+          const l = 2 * i + 1
+          const r = 2 * i + 2
+          if (l < size && arrCopy[l] > arrCopy[largest]) largest = l
+          if (r < size && arrCopy[r] > arrCopy[largest]) largest = r
+          if (largest !== i) {
+            [arrCopy[i], arrCopy[largest]] = [arrCopy[largest], arrCopy[i]]
+            swaps++
+            newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [i, largest], comparisons, swaps })
+            heapify(size, largest)
+          }
+        }
+        for (let i = Math.floor(n / 2) - 1; i >= 0; i--) heapify(n, i)
+        for (let i = n - 1; i > 0; i--) {
+          [arrCopy[0], arrCopy[i]] = [arrCopy[i], arrCopy[0]]
+          swaps++
+          newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [0, i], comparisons, swaps })
+          heapify(i, 0)
+        }
+        newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
+      }
+
+      if (algo.id === 'radix-sort') {
+        const maxVal = Math.max(...arrCopy)
+        let exp = 1
+        while (Math.floor(maxVal / exp) > 0) {
+          const count = new Array(10).fill(0)
+          const output = new Array(arrCopy.length)
+          for (let i = 0; i < arrCopy.length; i++) {
+            const digit = Math.floor(arrCopy[i] / exp) % 10
+            count[digit]++
+          }
+          for (let i = 1; i < 10; i++) count[i] += count[i - 1]
+          for (let i = arrCopy.length - 1; i >= 0; i--) {
+            const digit = Math.floor(arrCopy[i] / exp) % 10
+            output[count[digit] - 1] = arrCopy[i]
+            count[digit]--
+          }
+          for (let i = 0; i < arrCopy.length; i++) arrCopy[i] = output[i]
+          newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [], comparisons, swaps })
+          exp *= 10
+        }
+        newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
+      }
+
+      if (algo.id === 'counting-sort') {
+        const k = Math.max(...arrCopy)
+        const count = new Array(k + 1).fill(0)
+        for (let i = 0; i < arrCopy.length; i++) count[arrCopy[i]]++
+        let pos = 0
+        for (let v = 0; v <= k; v++) {
+          while (count[v] > 0) {
+            arrCopy[pos] = v
+            pos++
+            count[v]--
+          }
+        }
+        newSteps.push({ type: 'done', array: [...arrCopy], highlight: [], comparisons, swaps })
+      }
+
       if (algo.id === 'merge-sort') {
         const mergeSort = (arr, left, right) => {
           if (right - left <= 1) return
@@ -203,6 +266,162 @@ export function useAlgorithm(algo, arraySize) {
         }
       }
 
+      if (algo.id === 'dfs') {
+        const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
+        const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
+        let found = false
+
+        const dfs = (r, c) => {
+          if (r < 0 || r >= rows || c < 0 || c >= cols) return false
+          if (visited[r][c] || grid[r][c] === 1) return false
+          visited[r][c] = true
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          if (r === 7 && c === 16) { found = true; return true }
+          for (const [dr, dc] of [[-1, 0], [0, 1], [1, 0], [0, -1]]) {
+            if (dfs(r + dr, c + dc)) return true
+          }
+          return false
+        }
+        dfs(7, 3)
+
+        if (found) {
+          const path = []
+          let cur = [7, 16]
+          while (cur) {
+            path.push(cur)
+            const p = parent[cur[0]]?.[cur[1]]
+            cur = p ? p : null
+          }
+          path.reverse()
+          for (let i = 1; i < path.length; i++) {
+            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          }
+        }
+      }
+
+      if (algo.id === 'greedy-best-first') {
+        const heuristic = (r, c) => Math.abs(r - 7) + Math.abs(c - 16)
+        const visited = Array.from({ length: rows }, () => Array(cols).fill(false))
+        const parent = Array.from({ length: rows }, () => Array(cols).fill(null))
+        const openSet = [[7, 3]]
+        const inOpen = Array.from({ length: rows }, () => Array(cols).fill(false))
+        inOpen[7][3] = true
+        let found = false
+
+        const getBestOpen = () => {
+          let bestIdx = -1
+          let bestH = Infinity
+          for (let i = 0; i < openSet.length; i++) {
+            const [r, c] = openSet[i]
+            if (heuristic(r, c) < bestH) {
+              bestH = heuristic(r, c)
+              bestIdx = i
+            }
+          }
+          if (bestIdx === -1) return null
+          const node = openSet[bestIdx]
+          openSet.splice(bestIdx, 1)
+          inOpen[node[0]][node[1]] = false
+          return node
+        }
+
+        while (openSet.length > 0) {
+          const curr = getBestOpen()
+          if (!curr) break
+          const [r, c] = curr
+          if (r === 7 && c === 16) { found = true; break }
+          visited[r][c] = true
+          newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+            const nr = r + dr, nc = c + dc
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
+            if (grid[nr][nc] === 1 || visited[nr][nc]) continue
+            if (!inOpen[nr][nc]) {
+              parent[nr][nc] = [r, c]
+              openSet.push([nr, nc])
+              inOpen[nr][nc] = true
+            }
+          }
+        }
+
+        if (found) {
+          const path = []
+          let cur = [7, 16]
+          while (cur) {
+            path.push(cur)
+            const p = parent[cur[0]]?.[cur[1]]
+            cur = p ? p : null
+          }
+          path.reverse()
+          for (let i = 1; i < path.length; i++) {
+            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: path.slice(0, i + 1), visited: visited.map(row => [...row]), parent: parent.map(row => [...row]) })
+          }
+        }
+      }
+
+      if (algo.id === 'bidirectional-search') {
+        const visitedF = Array.from({ length: rows }, () => Array(cols).fill(false))
+        const visitedB = Array.from({ length: rows }, () => Array(cols).fill(false))
+        const parentF = Array.from({ length: rows }, () => Array(cols).fill(null))
+        const parentB = Array.from({ length: rows }, () => Array(cols).fill(null))
+        const queueF = [[7, 3]]
+        const queueB = [[7, 16]]
+        visitedF[7][3] = true
+        visitedB[7][16] = true
+        let meetPoint = null
+
+        while (queueF.length > 0 && queueB.length > 0) {
+          if (queueF.length > 0) {
+            const [r, c] = queueF.shift()
+            if (visitedB[r][c]) { meetPoint = [r, c]; break }
+            newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited: visitedF.map(row => [...row]), parent: parentF.map(row => [...row]), visitedB: visitedB.map(row => [...row]) })
+            for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+              const nr = r + dr, nc = c + dc
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visitedF[nr][nc] && grid[nr][nc] !== 1) {
+                visitedF[nr][nc] = true
+                parentF[nr][nc] = [r, c]
+                queueF.push([nr, nc])
+              }
+            }
+          }
+          if (queueB.length > 0) {
+            const [r, c] = queueB.shift()
+            if (visitedF[r][c]) { meetPoint = [r, c]; break }
+            newSteps.push({ type: 'visiting', grid: grid.map(row => [...row]), highlight: { r, c }, visited: visitedF.map(row => [...row]), parent: parentF.map(row => [...row]), visitedB: visitedB.map(row => [...row]) })
+            for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+              const nr = r + dr, nc = c + dc
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visitedB[nr][nc] && grid[nr][nc] !== 1) {
+                visitedB[nr][nc] = true
+                parentB[nr][nc] = [r, c]
+                queueB.push([nr, nc])
+              }
+            }
+          }
+        }
+
+        if (meetPoint) {
+          const pathF = []
+          let cur = meetPoint
+          while (cur) {
+            pathF.push(cur)
+            const p = parentF[cur[0]]?.[cur[1]]
+            cur = p ? p : null
+          }
+          pathF.reverse()
+          const pathB = []
+          cur = meetPoint
+          while (cur) {
+            pathB.push(cur)
+            const p = parentB[cur[0]]?.[cur[1]]
+            cur = p ? p : null
+          }
+          const fullPath = [...pathF, ...pathB.slice(1)]
+          for (let i = 1; i < fullPath.length; i++) {
+            newSteps.push({ type: 'path', grid: grid.map(row => [...row]), path: fullPath.slice(0, i + 1), visited: visitedF.map(row => [...row]), parent: parentF.map(row => [...row]), visitedB: visitedB.map(row => [...row]) })
+          }
+        }
+      }
+
       if (algo.id === 'a-star') {
         const heuristic = (r, c) => Math.abs(r - 7) + Math.abs(c - 16)
         const gScore = Array.from({ length: rows }, () => Array(cols).fill(Infinity))
@@ -279,6 +498,43 @@ export function useAlgorithm(algo, arraySize) {
       setSteps(newSteps)
       setCurrentStep(0)
     }
+
+    if (algo.category === 'search') {
+      const size = Math.max(5, Number(arraySize) || 20)
+      const arr = Array.from({ length: size }, (_, i) => i + 1).sort(() => Math.random() - 0.5)
+      const target = arr[Math.floor(Math.random() * arr.length)]
+      const newSteps = []
+      let found = false
+
+      if (algo.id === 'linear-search') {
+        for (let i = 0; i < arr.length; i++) {
+          newSteps.push({ type: 'checking', array: [...arr], index: i, target, found: arr[i] === target })
+          if (arr[i] === target) { found = true; break }
+        }
+        if (!found) {
+          newSteps.push({ type: 'not-found', array: [...arr], index: -1, target })
+        }
+      }
+
+      if (algo.id === 'binary-search') {
+        const sorted = [...arr].sort((a, b) => a - b)
+        let left = 0
+        let right = sorted.length - 1
+        while (left <= right) {
+          const mid = Math.floor((left + right) / 2)
+          newSteps.push({ type: 'checking', array: sorted, index: mid, left, right, target, found: sorted[mid] === target, low: left, high: right })
+          if (sorted[mid] === target) { found = true; break }
+          else if (sorted[mid] < target) left = mid + 1
+          else right = mid - 1
+        }
+        if (!found) {
+          newSteps.push({ type: 'not-found', array: sorted, index: -1, target, low: left, high: right })
+        }
+      }
+
+      setSteps(newSteps)
+      setCurrentStep(0)
+    }
   }, [algo, arraySize])
 
   // Generate steps whenever the algorithm changes
@@ -321,8 +577,8 @@ export function useAlgorithm(algo, arraySize) {
   const reset = useCallback(() => { setIsPlaying(false); setCurrentStep(0); generateSteps() }, [generateSteps])
 
   const stats = steps[currentStep]
-    ? { comparisons: steps[currentStep].comparisons, swaps: steps[currentStep].swaps, elapsed }
-    : { comparisons: 0, swaps: 0, elapsed }
+    ? { comparisons: steps[currentStep].comparisons, swaps: steps[currentStep].swaps, elapsed, isSearch: algo?.category === 'search' }
+    : { comparisons: 0, swaps: 0, elapsed, isSearch: false }
 
   return { steps, currentStep, isPlaying, setIsPlaying, speed, setSpeed, elapsed, stepForward, stepBackward, reset, generateSteps, stats }
 }

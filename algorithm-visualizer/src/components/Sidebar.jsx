@@ -83,7 +83,7 @@ export default function Sidebar({ isOpen, algorithms, selectedAlgo, selectedAlgo
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-dark-500">
-                  <span>{algo.category === 'sorting' ? '📊' : '🗺️'}</span>
+                  <span>{algo.category === 'sorting' ? '📊' : algo.category === 'pathfinding' ? '🗺️' : '🔍'}</span>
                   <span>{algo.averageCase}</span>
                   <span>·</span>
                   <span>{algo.spaceComplexity}</span>

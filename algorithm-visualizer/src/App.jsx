@@ -217,14 +217,18 @@ function App() {
                     Select an algorithm from the sidebar to start visualizing how it works step by step.
                     Enable Compare mode to see two algorithms side by side!
                   </p>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-3 gap-3 text-sm">
                     <div className="card p-3">
                       <div className="text-violet-400 font-semibold mb-1">Sorting</div>
-                      <div className="text-dark-400">Bubble, Selection, Insertion, Merge, Quick</div>
+                      <div className="text-dark-400">Bubble, Selection, Insertion, Merge, Quick, Heap, Radix, Counting</div>
                     </div>
                     <div className="card p-3">
                       <div className="text-cyan-400 font-semibold mb-1">Pathfinding</div>
-                      <div className="text-dark-400">BFS, Dijkstra, A*</div>
+                      <div className="text-dark-400">BFS, DFS, Dijkstra, A*, Greedy Best-First, Bidirectional</div>
+                    </div>
+                    <div className="card p-3">
+                      <div className="text-amber-400 font-semibold mb-1">Search</div>
+                      <div className="text-dark-400">Binary Search, Linear Search</div>
                     </div>
                   </div>
                 </div>
