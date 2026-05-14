@@ -25,9 +25,10 @@ function App() {
     end: [7, 16],
   })
   const [compareMode, setCompareMode] = useState(false)
+  const [arraySize, setArraySize] = useState(30)
 
-  const algoHook = useAlgorithm(selectedAlgo)
-  const algoHook2 = useAlgorithm(selectedAlgo2)
+  const algoHook = useAlgorithm(selectedAlgo, arraySize)
+  const algoHook2 = useAlgorithm(selectedAlgo2, arraySize)
   const { steps, currentStep, isPlaying, setIsPlaying, speed, setSpeed, stats, stepForward, stepBackward, reset, generateSteps } = algoHook
   const { steps: steps2, currentStep: currentStep2, isPlaying: isPlaying2, setIsPlaying: setIsPlaying2, speed: speed2, setSpeed: setSpeed2, stats: stats2, stepForward: stepForward2, stepBackward: stepBackward2, reset: reset2, generateSteps: generateSteps2 } = algoHook2
 
@@ -80,11 +81,11 @@ function App() {
 
   useEffect(() => {
     if (selectedAlgo) generateSteps()
-  }, [selectedAlgo, generateSteps])
+  }, [selectedAlgo, arraySize, generateSteps])
 
   useEffect(() => {
     if (selectedAlgo2) generateSteps2()
-  }, [selectedAlgo2, generateSteps2])
+  }, [selectedAlgo2, arraySize, generateSteps2])
 
   const handlePlayToggle = useCallback(() => {
     setIsPlaying(!isPlaying)
@@ -113,6 +114,7 @@ function App() {
         algorithms={filteredAlgorithms}
         selectedAlgo={selectedAlgo}
         selectedAlgo2={selectedAlgo2}
+        compareMode={compareMode}
         onSelectAlgo={handleSelectAlgo}
         onSelectAlgo2={handleSelectAlgo2}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -169,6 +171,8 @@ function App() {
                       isPlaying={isPlaying}
                       setIsPlaying={setIsPlaying}
                       speed={speed}
+                      arraySize={arraySize}
+                      onArraySizeChange={setArraySize}
                       gridConfig={gridConfig}
                       onGridUpdate={handleGridUpdate}
                       onCellClick={handleCellClick}
@@ -183,6 +187,8 @@ function App() {
                         isPlaying={isPlaying2}
                         setIsPlaying={setIsPlaying2}
                         speed={speed2}
+                        arraySize={arraySize}
+                        onArraySizeChange={setArraySize}
                         gridConfig={gridConfig}
                         onGridUpdate={handleGridUpdate}
                         onCellClick={handleCellClick}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 
-export default function Sidebar({ isOpen, algorithms, selectedAlgo, selectedAlgo2, onSelectAlgo, onSelectAlgo2, onToggle }) {
+export default function Sidebar({ isOpen, algorithms, selectedAlgo, selectedAlgo2, compareMode, onSelectAlgo, onSelectAlgo2, onToggle }) {
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -41,6 +41,16 @@ export default function Sidebar({ isOpen, algorithms, selectedAlgo, selectedAlgo
               <button
                 key={algo.id}
                 onClick={() => {
+                  if (!compareMode) {
+                    if (selectedAlgo?.id === algo.id) {
+                      onSelectAlgo(null)
+                    } else {
+                      onSelectAlgo(algo)
+                      onSelectAlgo2(null)
+                    }
+                    return
+                  }
+
                   if (selectedAlgo2?.id === algo.id) {
                     onSelectAlgo2(null)
                   } else if (selectedAlgo?.id === algo.id) {
@@ -48,6 +58,8 @@ export default function Sidebar({ isOpen, algorithms, selectedAlgo, selectedAlgo
                   } else if (!selectedAlgo) {
                     onSelectAlgo(algo)
                   } else if (!selectedAlgo2) {
+                    onSelectAlgo2(algo)
+                  } else {
                     onSelectAlgo2(algo)
                   }
                 }}

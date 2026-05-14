@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 
-export function useAlgorithm(algo) {
+export function useAlgorithm(algo, arraySize) {
   const [steps, setSteps] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -15,7 +15,8 @@ export function useAlgorithm(algo) {
     setElapsed(0)
 
     if (algo.category === 'sorting') {
-      const arr = Array.from({ length: 30 }, () => Math.floor(Math.random() * 95) + 5)
+      const size = Math.max(5, Number(arraySize) || 30)
+      const arr = Array.from({ length: size }, () => Math.floor(Math.random() * 95) + 5)
       const arrCopy = [...arr]
       const newSteps = []
       let comparisons = 0
@@ -31,6 +32,7 @@ export function useAlgorithm(algo) {
             if (arrCopy[j] > arrCopy[j + 1]) {
               [arrCopy[j], arrCopy[j + 1]] = [arrCopy[j + 1], arrCopy[j]]
               swaps++
+              swapped = true
               newSteps.push({ type: 'swapping', array: [...arrCopy], highlight: [j, j + 1], comparisons, swaps })
             }
           }
@@ -232,7 +234,7 @@ export function useAlgorithm(algo) {
       setSteps(newSteps)
       setCurrentStep(0)
     }
-  }, [algo])
+  }, [algo, arraySize])
 
   useEffect(() => {
     if (isPlaying && steps.length > 0 && currentStep < steps.length - 1) {
@@ -248,17 +250,29 @@ export function useAlgorithm(algo) {
 
   // Update elapsed time during playback
   useEffect(() => {
-    if (isPlaying && startTimeRef.current) {
+    if (isPlaying && startTimeRef.current && currentStep < steps.length - 1) {
       const timer = setInterval(() => setElapsed(Math.round((Date.now() - startTimeRef.current) / 10)), 50)
       return () => clearInterval(timer)
     }
-  }, [isPlaying])
+
+    if (currentStep >= steps.length - 1 && startTimeRef.current) {
+      setElapsed(Math.round((Date.now() - startTimeRef.current) / 10))
+    }
+  }, [isPlaying, currentStep, steps.length])
+
+  useEffect(() => {
+    if (isPlaying && currentStep >= steps.length - 1) {
+      setIsPlaying(false)
+    }
+  }, [isPlaying, currentStep, steps.length, setIsPlaying])
 
   const stepForward = useCallback(() => { if (currentStep < steps.length - 1) setCurrentStep(prev => prev + 1) }, [currentStep, steps.length])
   const stepBackward = useCallback(() => { if (currentStep > 0) setCurrentStep(prev => prev - 1) }, [currentStep])
   const reset = useCallback(() => { setIsPlaying(false); setCurrentStep(0); generateSteps() }, [generateSteps])
 
-  const stats = steps[currentStep] ? { comparisons: steps[currentStep].comparisons, swaps: steps[currentStep].swaps } : { comparisons: 0, swaps: 0 }
+  const stats = steps[currentStep]
+    ? { comparisons: steps[currentStep].comparisons, swaps: steps[currentStep].swaps, elapsed }
+    : { comparisons: 0, swaps: 0, elapsed }
 
   return { steps, currentStep, isPlaying, setIsPlaying, speed, setSpeed, elapsed, stepForward, stepBackward, reset, generateSteps, stats }
 }

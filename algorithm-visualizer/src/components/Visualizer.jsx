@@ -1,9 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import GridCell from './GridCell'
 
-export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsPlaying, speed, gridConfig, onGridUpdate, onCellClick }) {
-  const [arraySize, setArraySize] = useState(30)
+export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsPlaying, speed, arraySize, onArraySizeChange, gridConfig, onGridUpdate, onCellClick }) {
   const [grid, setGrid] = useState([])
   const dragRef = useRef({ isDragging: false })
   const intervalRef = useRef(null)
@@ -57,26 +55,27 @@ export default function Visualizer({ algo, steps, currentStep, isPlaying, setIsP
             min="5"
             max="100"
             value={arraySize}
-            onChange={e => setArraySize(Number(e.target.value))}
+            onChange={e => onArraySizeChange(Number(e.target.value))}
             className="w-32 h-1.5 bg-dark-700 rounded-full appearance-none cursor-pointer accent-violet-500"
           />
           <span className="text-xs text-dark-400 font-mono">{arraySize}</span>
         </div>
 
-        <div className="flex-1 flex items-end justify-center gap-[1px] px-4 pb-4 min-h-[300px]">
+        <div
+          className="flex-1 flex items-end justify-center gap-[1px] px-4 pb-4"
+          style={{ height: 320 }}
+        >
           {arr.map((val, i) => {
-            const height = (val / maxVal) * 100
+            const height = (val / maxVal) * 280
             const isHighlighted = highlight.includes(i)
             return (
-              <motion.div
+              <div
                 key={`${currentStep}-${i}`}
-                initial={false}
-                animate={{
-                  height: `${height}%`,
+                style={{
+                  height: `${height}px`,
                   backgroundColor: isHighlighted ? '#facc15' : '#818cf8',
                 }}
-                transition={{ duration: 0.15, ease: 'easeInOut' }}
-                className="flex-1 rounded-t-sm min-w-[2px]"
+                className="flex-1 rounded-t-sm min-w-[2px] bar-transition"
               />
             )
           })}
